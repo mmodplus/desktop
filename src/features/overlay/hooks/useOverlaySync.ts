@@ -126,13 +126,15 @@ export function useOverlaySync() {
           break;
         case "volumeUp": {
           const current = player.volume;
-          const next = Math.min(1, Math.round((current + 0.05) * 100) / 100);
+          const step = typeof action.payload?.step === "number" ? action.payload.step : 0.05;
+          const next = Math.min(1, Math.round((current + step) * 100) / 100);
           playerEngine.setVolume(next);
           break;
         }
         case "volumeDown": {
           const current = player.volume;
-          const next = Math.max(0, Math.round((current - 0.05) * 100) / 100);
+          const step = typeof action.payload?.step === "number" ? action.payload.step : 0.05;
+          const next = Math.max(0, Math.round((current - step) * 100) / 100);
           playerEngine.setVolume(next);
           break;
         }

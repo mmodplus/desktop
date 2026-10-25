@@ -476,9 +476,9 @@ if (!gotTheLock) {
     const updateSleepBlocker = createSleepBlocker(powerSaveBlocker);
     thumbar = new ThumbarController(
       () => mainWindow,
-      (type) => {
+      (action) => {
         if (mainWindow && !mainWindow.isDestroyed())
-          mainWindow.webContents.send("overlay:action", { type });
+          mainWindow.webContents.send("overlay:action", action);
       },
     );
     ipcMain.on(

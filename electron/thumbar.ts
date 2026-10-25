@@ -1,7 +1,11 @@
 import { nativeImage, type BrowserWindow, type NativeImage, type ThumbarButton } from "electron";
 
-export type ThumbarGlyph = "prev" | "next" | "play" | "pause";
-export type ThumbarAction = "prev" | "togglePlay" | "next";
+export type ThumbarGlyph = "prev" | "next" | "play" | "pause" | "volumeDown" | "volumeUp";
+export type ThumbarAction =
+  | { type: "prev" | "togglePlay" | "next" }
+  | { type: "volumeDown" | "volumeUp"; payload: { step: number } };
+
+const VOLUME_STEP = 0.1;
 
 type Point = [number, number];
 type Shape = { kind: "rect"; x: number; y: number; w: number; h: number } | { kind: "tri"; a: Point; b: Point; c: Point };
@@ -22,6 +26,17 @@ const SHAPES: Record<ThumbarGlyph, Shape[]> = {
   prev: [
     { kind: "rect", x: 3, y: 2.5, w: 2.5, h: 11 },
     { kind: "tri", a: [13.5, 2.5], b: [13.5, 13.5], c: [6, 8] },
+  ],
+  volumeDown: [
+    { kind: "rect", x: 1, y: 5.5, w: 3, h: 5 },
+    { kind: "tri", a: [2.5, 8], b: [8.5, 2.5], c: [8.5, 13.5] },
+    { kind: "rect", x: 10, y: 7, w: 5, h: 2 },
+  ],
+  volumeUp: [
+    { kind: "rect", x: 1, y: 5.5, w: 3, h: 5 },
+    { kind: "tri", a: [2.5, 8], b: [8.5, 2.5], c: [8.5, 13.5] },
+    { kind: "rect", x: 10, y: 7, w: 5, h: 2 },
+    { kind: "rect", x: 11.5, y: 5.5, w: 2, h: 5 },
   ],
 };
 
@@ -113,15 +128,32 @@ export class ThumbarController {
   }
 
   private buttons(): ThumbarButton[] {
-    this.icons ??= { prev: glyphImage("prev"), next: glyphImage("next"), play: glyphImage("play"), pause: glyphImage("pause") };
+    this.icons ??= {
+      prev: glyphImage("prev"),
+      next: glyphImage("next"),
+      play: glyphImage("play"),
+      pause: glyphImage("pause"),
+      volumeDown: glyphImage("volumeDown"),
+      volumeUp: glyphImage("volumeUp"),
+    };
     return [
-      { tooltip: "Previous", icon: this.icons.prev, click: () => this.send("prev") },
+      {
+        tooltip: "Volume -10",
+        icon: this.icons.volumeDown,
+        click: () => this.send({ type: "volumeDown", payload: { step: VOLUME_STEP } }),
+      },
+      { tooltip: "Previous", icon: this.icons.prev, click: () => this.send({ type: "prev" }) },
       {
         tooltip: this.playing ? "Pause" : "Play",
         icon: this.playing ? this.icons.pause : this.icons.play,
-        click: () => this.send("togglePlay"),
+        click: () => this.send({ type: "togglePlay" }),
       },
-      { tooltip: "Next", icon: this.icons.next, click: () => this.send("next") },
+      { tooltip: "Next", icon: this.icons.next, click: () => this.send({ type: "next" }) },
+      {
+        tooltip: "Volume +10",
+        icon: this.icons.volumeUp,
+        click: () => this.send({ type: "volumeUp", payload: { step: VOLUME_STEP } }),
+      },
     ];
   }
 }

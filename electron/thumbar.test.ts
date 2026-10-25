@@ -40,6 +40,16 @@ describe("drawThumbarGlyph", () => {
     expect(alphaAt(prev, 16, 3, 8)).toBe(255);
     expect(alphaAt(next, 16, 12, 8)).toBe(255);
   });
+
+  it("only gives volume up the vertical bar of the plus", () => {
+    const down = drawThumbarGlyph("volumeDown", 16);
+    const up = drawThumbarGlyph("volumeUp", 16);
+    expect(alphaAt(down, 16, 2, 8)).toBe(255);
+    expect(alphaAt(down, 16, 11, 8)).toBe(255);
+    expect(alphaAt(up, 16, 11, 8)).toBe(255);
+    expect(alphaAt(down, 16, 12, 6)).toBe(0);
+    expect(alphaAt(up, 16, 12, 6)).toBe(255);
+  });
 });
 
 describe("ThumbarController", () => {
@@ -51,13 +61,19 @@ describe("ThumbarController", () => {
     return { win, sent, controller, lastButtons };
   }
 
-  it("shows previous, pause and next while a track plays, and routes clicks to the player", () => {
+  it("shows volume, previous, pause and next while a track plays, and routes clicks to the player", () => {
     const { sent, controller, lastButtons } = setup();
     controller.update({ status: "playing", track: { id: "a" } });
     const buttons = lastButtons();
-    expect(buttons.map((b) => b.tooltip)).toEqual(["Previous", "Pause", "Next"]);
+    expect(buttons.map((b) => b.tooltip)).toEqual(["Volume -10", "Previous", "Pause", "Next", "Volume +10"]);
     buttons.forEach((b) => b.click());
-    expect(sent).toEqual(["prev", "togglePlay", "next"]);
+    expect(sent).toEqual([
+      { type: "volumeDown", payload: { step: 0.1 } },
+      { type: "prev" },
+      { type: "togglePlay" },
+      { type: "next" },
+      { type: "volumeUp", payload: { step: 0.1 } },
+    ]);
   });
 
   it("switches to play when paused, and only touches the taskbar when something changed", () => {
@@ -66,7 +82,7 @@ describe("ThumbarController", () => {
     controller.update({ status: "playing", track: { id: "b" } });
     expect(win.setThumbarButtons).toHaveBeenCalledTimes(1);
     controller.update({ status: "paused", track: { id: "b" } });
-    expect(lastButtons().map((b) => b.tooltip)).toEqual(["Previous", "Play", "Next"]);
+    expect(lastButtons().map((b) => b.tooltip)).toEqual(["Volume -10", "Previous", "Play", "Next", "Volume +10"]);
     expect(win.setThumbarButtons).toHaveBeenCalledTimes(2);
   });
 
