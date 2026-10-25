@@ -23,6 +23,11 @@ const WAITING_GRACE_MS = 300; // a buffering hiccup shorter than this never show
 const STALL_RECOVERY_MS = 12_000;
 // the swap to the fully downloaded source never blocks the element's events longer than this
 const SWAP_SETTLE_MS = 5000;
+// a track still not playing after this is stuck (hung resolve, dead url): retry once, then skip it
+const LOAD_TIMEOUT_MS = 15_000;
+// skipping to the track being preloaded only waits this long for the full download;
+// past it the preload is dropped and the track streams right away
+const PRELOAD_WAIT_MS = 1500;
 
 export class PlayerRuntime {
   private audio: HTMLAudioElement;
@@ -56,6 +61,7 @@ export class PlayerRuntime {
   // the status for that re-animated the play / pause button on every seek
   private waitingTimer: ReturnType<typeof setTimeout> | null = null;
   private stallTimer: ReturnType<typeof setTimeout> | null = null;
+  private loadTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
   public onEnded?: () => void;
   public onError?: (info: { trackId: string; message: string }) => void;
 
@@ -521,6 +527,41 @@ export class PlayerRuntime {
     this.onError?.({ trackId, message });
   }
 
+  private armLoadTimeout(epoch: number, track: Track, startPositionMs: number) {
+    if (this.loadTimeoutTimer) clearTimeout(this.loadTimeoutTimer);
+    this.loadTimeoutTimer = setTimeout(() => {
+      this.loadTimeoutTimer = null;
+      if (epoch !== this.loadEpoch || this.currentTrackId !== track.id) return;
+      if (usePlayerStore.getState().status !== "loading") return;
+
+      if (this.recoveryAttempts < 1) {
+        this.recoveryAttempts++;
+        log(
+          "yellow",
+          "playback",
+          `"${track.title}" not playing after ${LOAD_TIMEOUT_MS}ms — retrying without cache`,
+        );
+        void this.loadAndPlay(track, startPositionMs, true);
+        return;
+      }
+
+      const message = "Track took too long to load";
+      log("red", "playback", `${message} — giving up on "${track.title}"`);
+      this.loadEpoch += 1;
+      this.loadAbortController?.abort();
+      this.loadAbortController = null;
+      usePlayerStore.getState().setStatus("error", message);
+      this.onError?.({ trackId: track.id, message });
+    }, LOAD_TIMEOUT_MS);
+  }
+
+  private dropPreload() {
+    this.preloadAbortController?.abort();
+    this.preloadAbortController = null;
+    this.preloadingTrackId = null;
+    this.preloadingPromise = null;
+  }
+
   public getCurrentTrackId(): string | null {
     return this.currentTrackId;
   }
@@ -852,13 +893,30 @@ export class PlayerRuntime {
       this.recoveryHoldUntilMs = null;
     }
 
+    this.armLoadTimeout(epoch, track, startPositionMs);
+
     if (this.preloadingTrackId === track.id && this.preloadingPromise) {
-      await this.preloadingPromise;
+      // waiting for the whole file before playing made a skip right after the
+      // preload started sit on "loading" for the full download
+      let waitTimer: ReturnType<typeof setTimeout> | undefined;
+      const preloaded = await Promise.race([
+        this.preloadingPromise.then(() => true),
+        new Promise<boolean>((resolve) => {
+          waitTimer = setTimeout(() => resolve(false), PRELOAD_WAIT_MS);
+        }),
+      ]);
+      clearTimeout(waitTimer);
+      if (epoch !== this.loadEpoch) return;
+      if (!preloaded && this.preloadingTrackId === track.id) {
+        log(
+          "cyan",
+          "preload",
+          `preload still running — streaming "${track.title}" instead`,
+        );
+        this.dropPreload();
+      }
     } else if (this.preloadingTrackId && this.preloadingTrackId !== track.id) {
-      this.preloadAbortController?.abort();
-      this.preloadAbortController = null;
-      this.preloadingTrackId = null;
-      this.preloadingPromise = null;
+      this.dropPreload();
     }
 
     this.loadAbortController?.abort();
