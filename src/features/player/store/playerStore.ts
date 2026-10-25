@@ -43,6 +43,8 @@ export interface QueueState {
   currentTrack: Track | null;
   playbackContext: string | null;
   playbackContextCover: string | null;
+  // queue entries appended by "autoplay similar", not part of the played list
+  autoplayTrackIds: string[];
 }
 
 export interface SessionState {
@@ -103,6 +105,7 @@ export interface PlayerStore extends PlayerState {
   setQueue: (queue: Track[]) => void;
   setPlaybackContext: (context: string | null) => void;
   setPlaybackContextCover: (cover: string | null) => void;
+  setAutoplayTrackIds: (ids: string[]) => void;
   setAudioQuality: (quality: AudioQuality) => void;
   setMiniPlayerStyle: (style: MiniPlayerStyle) => void;
   setAccentVariant: (variant: AccentVariant) => void;
@@ -142,6 +145,7 @@ export const usePlayerStore = create<PlayerStore>()(
       currentTrack: null,
       playbackContext: null,
       playbackContextCover: null,
+      autoplayTrackIds: [],
 
       // SessionSlice
       volume: 1,
@@ -186,6 +190,7 @@ export const usePlayerStore = create<PlayerStore>()(
       setPlaybackContext: (playbackContext) => set({ playbackContext }),
       setPlaybackContextCover: (playbackContextCover) =>
         set({ playbackContextCover }),
+      setAutoplayTrackIds: (autoplayTrackIds) => set({ autoplayTrackIds }),
       setAudioQuality: (audioQuality) => set({ audioQuality }),
       setMiniPlayerStyle: (miniPlayerStyle: MiniPlayerStyle) =>
         set({ miniPlayerStyle }),
@@ -227,6 +232,7 @@ export const usePlayerStore = create<PlayerStore>()(
           currentTrack: null,
           playbackContext: null,
           playbackContextCover: null,
+          autoplayTrackIds: [],
           fullscreen: false,
         }),
       clearQueue: () => {
@@ -237,6 +243,7 @@ export const usePlayerStore = create<PlayerStore>()(
             currentIndex: 0,
             playbackContext: null,
             playbackContextCover: null,
+            autoplayTrackIds: [],
           });
         } else {
           set({
@@ -245,6 +252,7 @@ export const usePlayerStore = create<PlayerStore>()(
             currentTrack: null,
             playbackContext: null,
             playbackContextCover: null,
+            autoplayTrackIds: [],
             fullscreen: false,
           });
         }
@@ -279,6 +287,9 @@ export const usePlayerStore = create<PlayerStore>()(
           state.accentVariant = "default";
         }
         if (state) {
+          if (!Array.isArray(state.autoplayTrackIds)) {
+            state.autoplayTrackIds = [];
+          }
           if (
             typeof state.playbackRate !== "number" ||
             isNaN(state.playbackRate)
@@ -316,6 +327,7 @@ export const usePlayerStore = create<PlayerStore>()(
               currentTrack: state.currentTrack,
               playbackContext: state.playbackContext,
               playbackContextCover: state.playbackContextCover,
+              autoplayTrackIds: state.autoplayTrackIds,
               playbackMode: state.playbackMode,
               positionMs: state.positionMs,
               durationMs: state.durationMs,

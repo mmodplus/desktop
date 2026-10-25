@@ -230,12 +230,10 @@ class PlaybackTelemetryTracker {
       const artistsList = snap?.artistList?.length
         ? snap.artistList.map((a) => ({ id: a.id || "unknown", name: a.name }))
         : snap?.artists
-          ? snap.artists
-              .split(",")
-              .map((name) => ({
-                id: snap?.artistId || "unknown",
-                name: name.trim(),
-              }))
+          ? snap.artists.split(",").map((name) => ({
+              id: snap?.artistId || "unknown",
+              name: name.trim(),
+            }))
           : [{ id: "unknown", name: "Unknown Artist" }];
 
       reported = this.sendEvent({
@@ -280,13 +278,16 @@ class PlaybackTelemetryTracker {
   }
 
   private sendEvent(payload: RecordPlaybackEventRequest): Promise<void> {
-    return api.recordPlaybackEvent(payload).then(() => undefined, (err) => {
-      log(
-        "yellow",
-        "telemetry",
-        `playback event report failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    });
+    return api.recordPlaybackEvent(payload).then(
+      () => undefined,
+      (err) => {
+        log(
+          "yellow",
+          "telemetry",
+          `playback event report failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      },
+    );
   }
 }
 
@@ -305,6 +306,7 @@ class PlayerEngine {
   private consecutiveAutoSkips = 0;
   private lastPreloadKey: string | null = null;
   private inFlightLyricsPrefetches = new Map<string, Promise<void>>();
+  private manuallyQueued = new WeakSet<Track>();
 
   constructor() {
     usePlayerStore.setState({
@@ -482,6 +484,7 @@ class PlayerEngine {
 
     if (!isSelectingFromCurrentQueue) {
       this.masterPlaylist = [...nextQueue];
+      store.setAutoplayTrackIds([]);
     }
 
     if (!isSelectingFromCurrentQueue && store.shuffle && nextQueue.length > 1) {
@@ -540,6 +543,7 @@ class PlayerEngine {
 
     this.masterPlaylist = [...tracks];
     this.originalUpcomingQueue = [...remaining];
+    store.setAutoplayTrackIds([]);
 
     store.setShuffle(true);
     if (context !== undefined) {
@@ -579,6 +583,7 @@ class PlayerEngine {
     if (store.repeat === "all") store.setRepeat("off");
     store.setPlaybackContextCover(track.coverUrl ?? null);
     store.setQueue([track]);
+    store.setAutoplayTrackIds([]);
     this.originalUpcomingQueue = [];
 
     store.setCurrentTrack(track, 0);
@@ -672,12 +677,11 @@ class PlayerEngine {
     const store = usePlayerStore.getState();
     const nextIndex = this.computeNextIndex(isAutoEnd);
 
-    if (
-      nextIndex === null &&
-      isRadioContext(store.playbackContext) &&
-      store.currentTrack
-    ) {
-      // radio ran dry (refill not back yet / failed earlier): fetch now and carry on
+    const continuesWithSimilar =
+      isRadioContext(store.playbackContext) ||
+      (store.autoplaySimilar && store.repeat === "off");
+    if (nextIndex === null && continuesWithSimilar && store.currentTrack) {
+      // radio / autoplay-similar ran dry (refill not back yet / failed earlier): fetch now and carry on
       const lengthBefore = store.queue.length;
       const waitSession = this.sessionId;
       store.setStatus("loading", null);
@@ -828,7 +832,44 @@ class PlayerEngine {
   }
 
   public setRepeat(mode: RepeatMode): void {
-    usePlayerStore.getState().setRepeat(mode);
+    const store = usePlayerStore.getState();
+    store.setRepeat(mode);
+    // repeat switched off on the last track: autoplay-similar gets its chance again
+    if (mode === "off" && store.currentTrack) {
+      this.maybeExtendQueue(
+        this.sessionId,
+        store.currentTrack.id,
+        store.currentIndex,
+        store.queue.length,
+      );
+    } else if (mode !== "off" && !isRadioContext(store.playbackContext)) {
+      this.dropUpcomingAutoplayTracks();
+    }
+  }
+
+  /** repeat turned on after autoplay already ran: loop the list, not the similar tracks */
+  private dropUpcomingAutoplayTracks(): void {
+    const store = usePlayerStore.getState();
+    if (store.autoplayTrackIds.length === 0 || store.currentIndex < 0) return;
+    const autoplayIds = new Set(store.autoplayTrackIds);
+    const upcoming = store.queue.slice(store.currentIndex + 1);
+    const kept = upcoming.filter(
+      (track) => !autoplayIds.has(track.id) || this.manuallyQueued.has(track),
+    );
+    if (kept.length === upcoming.length) return;
+    const dropped = new Set(
+      upcoming.filter((track) => !kept.includes(track)).map((t) => t.id),
+    );
+    store.setQueue([...store.queue.slice(0, store.currentIndex + 1), ...kept]);
+    store.setAutoplayTrackIds(
+      store.autoplayTrackIds.filter((id) => !dropped.has(id)),
+    );
+    log(
+      "cyan",
+      "radio",
+      `repeat on — removed ${dropped.size} autoplay tracks from the queue`,
+    );
+    this.preloadNextTrack(usePlayerStore.getState());
   }
 
   public setShuffle(enabled: boolean): void {
@@ -904,7 +945,29 @@ class PlayerEngine {
 
   public addToQueue(track: Track): void {
     const store = usePlayerStore.getState();
-    const newQueue = [...store.queue, track];
+    // nothing playing (empty queue, or playback ran off the end): start it,
+    // otherwise the track sits in a queue nobody will reach
+    if (!store.currentTrack || store.currentIndex < 0) {
+      this.manuallyQueued = new WeakSet();
+      void this.playTrack(track, [track]);
+      return;
+    }
+
+    // after the current track and anything queued by hand before, but ahead of
+    // the rest of the context and autoplay/radio refills
+    let insertAt = store.currentIndex + 1;
+    while (
+      insertAt < store.queue.length &&
+      this.manuallyQueued.has(store.queue[insertAt])
+    ) {
+      insertAt += 1;
+    }
+    this.manuallyQueued.add(track);
+    const newQueue = [
+      ...store.queue.slice(0, insertAt),
+      track,
+      ...store.queue.slice(insertAt),
+    ];
     store.setQueue(newQueue);
     if (this.masterPlaylist.length > 0) {
       this.masterPlaylist.push(track);
@@ -912,7 +975,7 @@ class PlayerEngine {
     if (store.shuffle) {
       this.originalUpcomingQueue.push(track);
     }
-    this.preloadNextTrack(store);
+    this.preloadNextTrack(usePlayerStore.getState());
   }
 
   public playNext(track: Track): void {
@@ -920,7 +983,7 @@ class PlayerEngine {
     const currentQueue = store.queue;
     const currentIndex = store.currentIndex;
 
-    if (currentQueue.length === 0) {
+    if (currentQueue.length === 0 || !store.currentTrack || currentIndex < 0) {
       void this.playTrack(track, [track]);
       return;
     }
@@ -945,7 +1008,7 @@ class PlayerEngine {
     if (store.shuffle) {
       this.originalUpcomingQueue.unshift(track);
     }
-    this.preloadNextTrack(store);
+    this.preloadNextTrack(usePlayerStore.getState());
   }
 
   public async stopAndClear(): Promise<void> {
@@ -1095,7 +1158,10 @@ class PlayerEngine {
     index: number,
     queueLength: number,
   ): void {
-    const radio = isRadioContext(usePlayerStore.getState().playbackContext);
+    const state = usePlayerStore.getState();
+    const radio = isRadioContext(state.playbackContext);
+    // with repeat on, the list loops instead of running into autoplay-similar tracks
+    if (!radio && state.repeat !== "off") return;
     const due = radio
       ? shouldRefillRadio(queueLength, index)
       : index === queueLength - 1;
@@ -1137,7 +1203,11 @@ class PlayerEngine {
     const currentState = usePlayerStore.getState();
     // radio always continues; plain lists only when "autoplay similar" is on
     const radio = isRadioContext(currentState.playbackContext);
-    if (!radio && !currentState.autoplaySimilar) return;
+    if (
+      !radio &&
+      (!currentState.autoplaySimilar || currentState.repeat !== "off")
+    )
+      return;
     const startContext = currentState.playbackContext;
 
     const historyIds = currentState.queue.map((track) => track.id);
@@ -1171,7 +1241,7 @@ class PlayerEngine {
         : session !== this.sessionId
     )
       return;
-    if (!radio && !state.autoplaySimilar) return;
+    if (!radio && (!state.autoplaySimilar || state.repeat !== "off")) return;
 
     const queuedIds = new Set(state.queue.map((track) => track.id));
     const additions = items
@@ -1189,7 +1259,13 @@ class PlayerEngine {
       `appending ${additions.length} tracks from Radio Wave engine (wave=${waveId.slice(0, 8)} history=${historyIds.length}): [${sample}]`,
     );
     state.setQueue([...state.queue, ...additions]);
-    this.preloadNextTrack(state);
+    if (!radio) {
+      state.setAutoplayTrackIds([
+        ...state.autoplayTrackIds,
+        ...additions.map((track) => track.id),
+      ]);
+    }
+    this.preloadNextTrack(usePlayerStore.getState());
   }
 
   private async syncDiscordPresence(

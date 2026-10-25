@@ -19,6 +19,10 @@ import {
 // error recovery tuning (see the audio "error" handler)
 const RECOVERY_HOLD_MS = 3000;
 const WAITING_GRACE_MS = 300; // a buffering hiccup shorter than this never shows // must play this far past a recovery before it may retry again
+// a stall this long is a dead stream (expired url, stuck download): reload instead of sitting silent
+const STALL_RECOVERY_MS = 12_000;
+// the swap to the fully downloaded source never blocks the element's events longer than this
+const SWAP_SETTLE_MS = 5000;
 
 export class PlayerRuntime {
   private audio: HTMLAudioElement;
@@ -51,6 +55,7 @@ export class PlayerRuntime {
   // loaded / cached track fires waiting -> playing within milliseconds, and flipping
   // the status for that re-animated the play / pause button on every seek
   private waitingTimer: ReturnType<typeof setTimeout> | null = null;
+  private stallTimer: ReturnType<typeof setTimeout> | null = null;
   public onEnded?: () => void;
   public onError?: (info: { trackId: string; message: string }) => void;
 
@@ -111,23 +116,50 @@ export class PlayerRuntime {
     if (typeof navigator === "undefined" || !navigator.mediaDevices) return;
 
     let initial = true;
-    const onDeviceChange = () => {
+    // what audio is going out through. "devicechange" also fires for microphones,
+    // webcams and a bluetooth headset flipping profiles when a call app opens its mic;
+    // pausing on those stopped the music out of nowhere
+    let outputSignature: string | null = null;
+    const readOutputSignature = async (): Promise<string | null> => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const outputs = devices.filter((d) => d.kind === "audiooutput");
+        // no ids without permission: can't tell what changed
+        if (outputs.every((d) => !d.deviceId && !d.groupId)) return null;
+        const active =
+          outputs.find((d) => d.deviceId === "default") ?? outputs[0];
+        return active ? `${active.groupId}|${active.label}` : "";
+      } catch {
+        return null;
+      }
+    };
+
+    const onDeviceChange = async () => {
+      const previous = outputSignature;
+      const next = await readOutputSignature();
+      outputSignature = next;
       if (initial) {
         initial = false;
         return;
       }
+      if (previous !== null && next !== null && previous === next) return;
       if (!usePlayerStore.getState().pauseOnDeviceChange) return;
       if (
         !this.audio.paused &&
         usePlayerStore.getState().status === "playing"
       ) {
+        log("cyan", "audio", "output device changed — pausing");
         this.pause();
       }
     };
 
     try {
-      navigator.mediaDevices.addEventListener("devicechange", onDeviceChange);
-      void navigator.mediaDevices.enumerateDevices().then(() => {
+      navigator.mediaDevices.addEventListener(
+        "devicechange",
+        () => void onDeviceChange(),
+      );
+      void readOutputSignature().then((signature) => {
+        outputSignature = signature;
         initial = false;
       });
     } catch {
@@ -271,7 +303,7 @@ export class PlayerRuntime {
     audioEl.addEventListener("durationchange", () => {
       if (this.isResetting || audioEl !== this.audio) return;
       if (!this.currentTrackId) return;
-      if (Number.isNaN(audioEl.duration) || audioEl.duration <= 0) return;
+      if (!Number.isFinite(audioEl.duration) || audioEl.duration <= 0) return;
 
       usePlayerStore
         .getState()
@@ -306,15 +338,28 @@ export class PlayerRuntime {
           usePlayerStore.getState().setStatus("loading");
         }
       }, WAITING_GRACE_MS);
+      if (this.stallTimer) clearTimeout(this.stallTimer);
+      const stalledTrackId = this.currentTrackId;
+      this.stallTimer = setTimeout(() => {
+        this.stallTimer = null;
+        if (audioEl !== this.audio || audioEl.paused || audioEl.readyState >= 3)
+          return;
+        if (!stalledTrackId || stalledTrackId !== this.currentTrackId) return;
+        if (this.attachedTrackId !== this.currentTrackId) return;
+        this.recoverFromStall(stalledTrackId);
+      }, STALL_RECOVERY_MS);
     });
 
     // resumed (or never really stalled): drop a pending "loading"
     for (const type of ["playing", "seeked", "canplay", "pause", "emptied"]) {
       audioEl.addEventListener(type, () => {
-        if (audioEl !== this.audio || !this.waitingTimer) return;
+        if (audioEl !== this.audio) return;
+        if (!this.waitingTimer && !this.stallTimer) return;
         if (type === "seeked" && audioEl.readyState < 3) return; // seeked but still no data
-        clearTimeout(this.waitingTimer);
+        if (this.waitingTimer) clearTimeout(this.waitingTimer);
         this.waitingTimer = null;
+        if (this.stallTimer) clearTimeout(this.stallTimer);
+        this.stallTimer = null;
       });
     }
 
@@ -323,10 +368,15 @@ export class PlayerRuntime {
       if (!this.currentTrackId) return;
       if (this.attachedTrackId !== this.currentTrackId) return;
 
-      // Ensure the track truly finished playing (not an empty media load or teardown artefact)
+      // Ensure the track truly finished playing (not an empty media load or teardown artefact).
+      // a webm without a duration header reports Infinity: the old check never passed
+      // and playback just stopped at the end of the track
       const duration = audioEl.duration;
       const currentTime = audioEl.currentTime;
-      if (duration > 0 && currentTime >= Math.max(0, duration - 1.5)) {
+      const finished = Number.isFinite(duration)
+        ? duration > 0 && currentTime >= Math.max(0, duration - 1.5)
+        : currentTime > 0;
+      if (finished) {
         log("cyan", "audio", "ended — skipping to next");
         this.onEnded?.();
         const state = usePlayerStore.getState();
@@ -442,6 +492,33 @@ export class PlayerRuntime {
       usePlayerStore.getState().setStatus("error", message);
       this.onError?.({ trackId: this.currentTrackId, message });
     });
+  }
+
+  private recoverFromStall(trackId: string) {
+    const store = usePlayerStore.getState();
+    const currentTrack = store.currentTrack;
+    if (!currentTrack || currentTrack.id !== trackId) return;
+    const posMs =
+      Number.isFinite(this.audio.currentTime) && this.audio.currentTime > 0
+        ? Math.round(this.audio.currentTime * 1000)
+        : store.positionMs;
+
+    if (this.recoveryAttempts < 1) {
+      this.recoveryAttempts++;
+      this.recoveryHoldUntilMs = posMs + RECOVERY_HOLD_MS;
+      log(
+        "yellow",
+        "playback",
+        `stalled for ${STALL_RECOVERY_MS}ms — reloading stream at ${posMs}ms`,
+      );
+      void this.loadAndPlay(currentTrack, posMs, true);
+      return;
+    }
+
+    const message = "Playback stalled";
+    log("red", "playback", `${message} again after recovery — giving up`);
+    store.setStatus("error", message);
+    this.onError?.({ trackId, message });
   }
 
   public getCurrentTrackId(): string | null {
@@ -574,12 +651,43 @@ export class PlayerRuntime {
     this.activeBlobUrl = url;
     this.audio.src = url;
     this.applyPlaybackRateAndPitch();
+    let settled = false;
+    // while isResetting is set every audio event (ended, error, pause) is ignored, so
+    // a swap that never finishes must not leave it set: the track would stop for good
+    const onSwapError = () => {
+      if (settled || this.audio.src !== url) return;
+      settle();
+      const track = usePlayerStore.getState().currentTrack;
+      if (track && track.id === this.currentTrackId) {
+        log("yellow", "playback", "full source failed — reloading stream");
+        void this.loadAndPlay(track, Math.round(position * 1000), true);
+      }
+    };
+    const guard = setTimeout(() => {
+      settle();
+      // events flow again, so a play() failure here reaches the error recovery
+      const status = usePlayerStore.getState().status;
+      if (
+        wasPlaying &&
+        (status === "playing" || status === "loading") &&
+        this.audio.paused &&
+        this.audio.src === url
+      ) {
+        void this.audio.play().catch(() => undefined);
+      }
+    }, SWAP_SETTLE_MS);
     const settle = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(guard);
+      this.audio.removeEventListener("error", onSwapError);
       this.isResetting = false;
     };
+    this.audio.addEventListener("error", onSwapError, { once: true });
     this.audio.addEventListener(
       "loadedmetadata",
       () => {
+        if (settled || this.audio.src !== url) return;
         this.audio.currentTime = position;
         if (wasPlaying) void this.audio.play().then(settle, settle);
         else settle();

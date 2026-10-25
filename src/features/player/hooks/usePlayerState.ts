@@ -15,6 +15,7 @@ const EMPTY_STATE: PlayerState = {
   playbackMode: null,
   playbackContext: null,
   playbackContextCover: null,
+  autoplayTrackIds: [],
   audioQuality: "high",
   miniPlayerStyle: "default",
   accentVariant: "default",

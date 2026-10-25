@@ -96,4 +96,56 @@ describe("radio playback", () => {
     await playerEngine.skipNext();
     expect(usePlayerStore.getState().currentTrack?.id).toBe("1");
   });
+
+  it("repeat-all after autoplay appended similar tracks loops back to the list", async () => {
+    usePlayerStore.setState({ autoplaySimilar: true });
+    getRadio.mockResolvedValue(radioItems(["s1", "s2"]));
+    const tracks = [mk("1"), mk("2")];
+    // straight to the last track: autoplay-similar fills in behind it
+    await playerEngine.playTrack(tracks[1], tracks, "playlist:p");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual([
+      "1",
+      "2",
+      "s1",
+      "s2",
+    ]);
+
+    playerEngine.setRepeat("all");
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual([
+      "1",
+      "2",
+    ]);
+    await playerEngine.skipNext(true);
+    expect(usePlayerStore.getState().currentTrack?.id).toBe("1");
+  });
+
+  it("autoplay-similar fetches at the end of the list when the early refill failed", async () => {
+    usePlayerStore.setState({ autoplaySimilar: true });
+    getRadio
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValue(radioItems(["s1"]));
+    const tracks = [mk("1"), mk("2")];
+    await playerEngine.playTrack(tracks[1], tracks, "playlist:p");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual([
+      "1",
+      "2",
+    ]);
+
+    await playerEngine.skipNext(true);
+    expect(usePlayerStore.getState().currentTrack?.id).toBe("s1");
+  });
+
+  it("does not append similar tracks while repeat is on", async () => {
+    usePlayerStore.setState({ autoplaySimilar: true, repeat: "all" });
+    getRadio.mockResolvedValue(radioItems(["s1"]));
+    const tracks = [mk("1"), mk("2")];
+    await playerEngine.playTrack(tracks[1], tracks, "playlist:p");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual([
+      "1",
+      "2",
+    ]);
+  });
 });
