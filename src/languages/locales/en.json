@@ -554,6 +554,10 @@
       "always_on_top": {
         "title": "Always on top",
         "description": "Keep the overlay floating above other windows."
+      },
+      "animations": {
+        "title": "Animations",
+        "description": "Animate likes, track changes and the controls on the overlay."
       }
     },
     "youtube": {

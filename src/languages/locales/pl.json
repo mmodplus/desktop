@@ -548,6 +548,10 @@
       "always_on_top": {
         "title": "Zawsze na wierzchu",
         "description": "Utrzymuje nakładkę nad innymi oknami."
+      },
+      "animations": {
+        "title": "Animacje",
+        "description": "Animuje polubienia, zmiany utworów i przyciski nakładki."
       }
     },
     "audio_data": {

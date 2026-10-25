@@ -492,6 +492,10 @@
       "always_on_top": {
         "title": "Siempre encima",
         "description": "Mantiene el reproductor flotando por encima de otras ventanas."
+      },
+      "animations": {
+        "title": "Animaciones",
+        "description": "Anima el me gusta, los cambios de canción y los controles del reproductor flotante."
       }
     },
     "discord": {

@@ -544,6 +544,10 @@
       "always_on_top": {
         "title": "Her zaman üstte",
         "description": "Katmanı diğer pencerelerin üstünde tutar."
+      },
+      "animations": {
+        "title": "Animasyonlar",
+        "description": "Katmandaki beğenileri, parça değişimlerini ve kontrolleri canlandırır."
       }
     },
     "audio_data": {

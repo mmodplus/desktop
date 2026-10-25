@@ -489,6 +489,10 @@
       "always_on_top": {
         "title": "Immer im Vordergrund",
         "description": "Hält das Overlay über anderen Fenstern."
+      },
+      "animations": {
+        "title": "Animationen",
+        "description": "Animiert Likes, Titelwechsel und die Steuerelemente des Overlays."
       }
     },
     "audio_data": {

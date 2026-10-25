@@ -557,6 +557,10 @@
       "always_on_top": {
         "title": "Sempre no topo",
         "description": "Mantém o overlay flutuante acima das outras janelas."
+      },
+      "animations": {
+        "title": "Animações",
+        "description": "Anima as curtidas, as trocas de faixa e os controles da sobreposição."
       }
     },
     "discord": {

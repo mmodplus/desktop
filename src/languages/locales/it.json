@@ -544,6 +544,10 @@
       "always_on_top": {
         "title": "Sempre in primo piano",
         "description": "Mantieni l'overlay sopra le altre finestre."
+      },
+      "animations": {
+        "title": "Animazioni",
+        "description": "Anima i mi piace, i cambi di brano e i controlli dell'overlay."
       }
     },
     "audio_data": {

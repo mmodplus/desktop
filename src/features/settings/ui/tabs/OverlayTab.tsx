@@ -60,6 +60,9 @@ export function OverlayTab({ searchQuery }: { searchQuery?: string }) {
   const alwaysOnTop = useOverlaySettingsStore((s) => s.alwaysOnTop);
   const setAlwaysOnTop = useOverlaySettingsStore((s) => s.setAlwaysOnTop);
 
+  const animations = useOverlaySettingsStore((s) => s.animations);
+  const setAnimations = useOverlaySettingsStore((s) => s.setAnimations);
+
   const [isRecording, setIsRecording] = useState(false);
   const [heldModifiers, setHeldModifiers] = useState<string[]>([]);
   const recordButtonRef = useRef<HTMLButtonElement>(null);
@@ -338,6 +341,24 @@ export function OverlayTab({ searchQuery }: { searchQuery?: string }) {
             <ToggleSwitch
               checked={alwaysOnTop}
               onChange={setAlwaysOnTop}
+              disabled={!enabled}
+            />
+          }
+        />
+
+        <SettingRow
+          title={t("settings.overlay.animations.title") || "Animations"}
+          description={
+            t("settings.overlay.animations.description") ||
+            "Animate likes, track changes and the controls on the overlay."
+          }
+          titleKey="settings.overlay.animations.title"
+          descKey="settings.overlay.animations.description"
+          searchQuery={searchQuery}
+          control={
+            <ToggleSwitch
+              checked={animations}
+              onChange={setAnimations}
               disabled={!enabled}
             />
           }

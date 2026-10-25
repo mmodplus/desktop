@@ -546,6 +546,10 @@
       "always_on_top": {
         "title": "Toujours au premier plan",
         "description": "Garde l'overlay au-dessus des autres fenêtres."
+      },
+      "animations": {
+        "title": "Animations",
+        "description": "Anime les j'aime, les changements de titre et les commandes de la superposition."
       }
     },
     "audio_data": {

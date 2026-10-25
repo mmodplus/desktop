@@ -9,6 +9,7 @@ interface OverlaySettingsState extends OverlaySettings {
   setShortcut: (shortcut: string) => void;
   setAutoShowOnMinimize: (autoShowOnMinimize: boolean) => void;
   setAlwaysOnTop: (alwaysOnTop: boolean) => void;
+  setAnimations: (animations: boolean) => void;
 }
 
 const DEFAULT_SETTINGS: OverlaySettings = {
@@ -17,7 +18,10 @@ const DEFAULT_SETTINGS: OverlaySettings = {
   shortcut: "Alt+Shift+O",
   autoShowOnMinimize: true,
   alwaysOnTop: true,
+  animations: true,
 };
+
+export const OVERLAY_SETTINGS_STORAGE_KEY = "liner_overlay_settings_v1";
 
 function notifyElectron(patch: Partial<OverlaySettings>) {
   if (typeof window !== "undefined" && window.linerElectron?.updateOverlaySettings) {
@@ -50,9 +54,12 @@ export const useOverlaySettingsStore = create<OverlaySettingsState>()(
         set({ alwaysOnTop });
         notifyElectron({ alwaysOnTop });
       },
+      setAnimations: (animations) => {
+        set({ animations });
+      },
     }),
     {
-      name: "liner_overlay_settings_v1",
+      name: OVERLAY_SETTINGS_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
         if (state?.shortcut) {

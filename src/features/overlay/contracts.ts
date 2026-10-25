@@ -6,6 +6,8 @@ export interface OverlaySettings {
   shortcut: string;
   autoShowOnMinimize: boolean;
   alwaysOnTop: boolean;
+  // renderer only: the overlay window reads it from the shared storage
+  animations: boolean;
 }
 
 export interface OverlayTrackInfo {
