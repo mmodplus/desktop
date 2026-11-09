@@ -13,6 +13,11 @@ const OVERLAY_MARGIN = 20;
 const TOGGLE_ACTION = "toggle-overlay";
 const LIKE_ACTION = "like-track";
 const COMPOSITOR_SETTLE_MS = 300;
+const OVERLAY_WIDTH = 320;
+const OVERLAY_HEIGHT = 56;
+// hidden into a small tab (or the cat): the window shrinks so it stops eating clicks
+const COLLAPSED_WIDTH = 64;
+const COLLAPSED_HEIGHT = 44;
 
 export interface OverlaySettings {
   enabled: boolean;
@@ -112,6 +117,8 @@ export class OverlayManager {
   private primed = false;
   private priming = false;
   private wantVisible = false;
+  // the renderer owns it; a new overlay window always starts expanded
+  private collapsed = false;
   private indexPathResolver: (() => string) | null = null;
   private loadedIndexPath: string | null = null;
 
@@ -427,10 +434,10 @@ export class OverlayManager {
   }
 
   private getTargetHeight(): number {
-    return 56;
+    return this.collapsed ? COLLAPSED_HEIGHT : OVERLAY_HEIGHT;
   }
 
-  private getWindowBounds(width = 320, height?: number) {
+  private getWindowBounds(width = this.collapsed ? COLLAPSED_WIDTH : OVERLAY_WIDTH, height?: number) {
     let targetDisplay = screen.getPrimaryDisplay();
     try {
       if (this.overlayWindow && !this.overlayWindow.isDestroyed()) {
@@ -815,6 +822,37 @@ export class OverlayManager {
     }
   }
 
+  private setCollapsed(collapsed: boolean) {
+    if (this.collapsed === collapsed) return;
+    this.collapsed = collapsed;
+    const win = this.overlayWindow;
+    if (!win || win.isDestroyed()) return;
+    this.stopMoveAnimation();
+    this.currentAnimatedX = null;
+    const target = this.getWindowBounds();
+    if (!win.isVisible()) {
+      win.setBounds(target);
+      return;
+    }
+    // keep the anchored edge where the user may have dragged the window
+    const current = win.getBounds();
+    let x: number;
+    switch (this.position) {
+      case "top-left":
+        x = current.x;
+        break;
+      case "top-right":
+        x = current.x + current.width - target.width;
+        break;
+      case "top-center":
+      default:
+        x = Math.round(current.x + (current.width - target.width) / 2);
+        break;
+    }
+    win.setBounds({ x, y: current.y, width: target.width, height: target.height });
+    if (this.compositor) void this.placeWithCompositor();
+  }
+
   private applyAlwaysOnTop() {
     if (!this.overlayWindow || this.overlayWindow.isDestroyed()) return;
 
@@ -877,6 +915,7 @@ export class OverlayManager {
 
   private createOverlayWindow() {
     if (this.disposed || !this.isAuthenticated || !this.enabled) return;
+    this.collapsed = false;
     const bounds = this.getWindowBounds();
 
     this.overlayWindow = new BrowserWindow({
@@ -958,9 +997,15 @@ export class OverlayManager {
       }
     });
 
-    ipcMain.on("overlay:send-action", (_event, action: any) => {
+    ipcMain.on("overlay:send-action", (event, action: any) => {
       if (action.type === "closeOverlay") {
         this.closeOverlay();
+        return;
+      }
+      if (action.type === "setCollapsed") {
+        if (this.overlayWindow && !this.overlayWindow.isDestroyed() && event.sender === this.overlayWindow.webContents) {
+          this.setCollapsed(Boolean(action.payload?.collapsed));
+        }
         return;
       }
       if (action.type === "focusMainWindow") {

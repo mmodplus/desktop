@@ -167,6 +167,11 @@
     "unlike": "Remover curtida",
     "add_to_playlist": "Adicionar à playlist",
     "remove_from_playlist": "Remover da playlist",
+    "block_artist": "Bloquear {name}",
+    "unblock_artist": "Desbloquear {name}",
+    "artist_blocked": "Artista bloqueado",
+    "artist_unblocked": "Artista desbloqueado",
+    "artist_blocked_description": "As músicas de {name} não serão mais reproduzidas",
     "no_items": "Nenhum item ainda",
     "your_library_here": "Sua biblioteca aparecerá aqui quando você adicionar itens.",
     "try_another_search_clear": "Tente outro termo de pesquisa ou limpe a busca.",
@@ -391,6 +396,7 @@
     "offset_hint": "Negativo adianta a letra, positivo atrasa",
     "track_unavailable": "«{title}» está indisponível, pulando...",
     "track_unavailable_title": "Faixa indisponível",
+    "artist_blocked_track": "Este artista está bloqueado",
     "playback_stopped_too_many_errors": "Reprodução interrompida — muitas faixas falharam ao carregar.",
     "speed_pitch": "Velocidade e Tom",
     "speed": "Velocidade",
@@ -427,7 +433,11 @@
     "sec": "s",
     "empty_title": "Esta playlist está vazia",
     "empty_subtitle": "Pesquise músicas para adicionar",
-    "likes_empty": "Nenhuma música curtida ainda"
+    "likes_empty": "Nenhuma música curtida ainda",
+    "add_songs": "Adicionar músicas",
+    "add_songs_placeholder": "Pesquisar músicas",
+    "add_songs_hint": "Pesquise músicas para adicionar a esta playlist",
+    "in_playlist": "Na playlist"
   },
   "search": {
     "placeholder": "Pesquise faixas, artistas, álbuns...",
@@ -560,7 +570,7 @@
       },
       "animations": {
         "title": "Animações",
-        "description": "Anima as curtidas, as trocas de faixa e os controles da sobreposição."
+        "description": "Anima as curtidas, as trocas de faixa e os controles da sobreposição. Quando oculta, às vezes aparece um gato."
       }
     },
     "discord": {
@@ -633,6 +643,12 @@
     "language": {
       "label": "Idioma",
       "description": "Selecione o idioma da interface"
+    },
+    "blocked_artists": {
+      "title": "Artistas bloqueados",
+      "description": "As músicas desses artistas são puladas e nunca entram na sua fila.",
+      "empty": "Você não bloqueou nenhum artista. Clique com o botão direito em uma música para bloquear o artista.",
+      "unblock": "Desbloquear"
     },
     "autoplay_similar": {
       "title": "Reproduzir faixas similares automaticamente",

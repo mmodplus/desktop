@@ -161,6 +161,11 @@
     "unlike": "Je n'aime plus",
     "add_to_playlist": "Ajouter à la playlist",
     "remove_from_playlist": "Retirer de la playlist",
+    "block_artist": "Bloquer {name}",
+    "unblock_artist": "Débloquer {name}",
+    "artist_blocked": "Artiste bloqué",
+    "artist_unblocked": "Artiste débloqué",
+    "artist_blocked_description": "Les titres de {name} ne seront plus lus",
     "no_items": "Aucun élément pour l'instant",
     "your_library_here": "Votre bibliothèque apparaîtra ici quand vous y ajouterez des éléments.",
     "try_another_search_clear": "Essayez un autre terme ou effacez la recherche.",
@@ -382,6 +387,7 @@
     "offset_hint": "Une valeur négative avance les paroles, une valeur positive les retarde",
     "track_unavailable": "« {title} » est indisponible, passage au suivant...",
     "track_unavailable_title": "Titre indisponible",
+    "artist_blocked_track": "Cet artiste est bloqué",
     "playback_stopped_too_many_errors": "Lecture arrêtée : trop de titres n'ont pas pu être chargés.",
     "speed_pitch": "Vitesse et tonalité",
     "speed": "Vitesse",
@@ -417,7 +423,11 @@
     "min": "min",
     "sec": "s",
     "empty_title": "Cette playlist est vide",
-    "empty_subtitle": "Recherchez des titres à ajouter"
+    "empty_subtitle": "Recherchez des titres à ajouter",
+    "add_songs": "Ajouter des titres",
+    "add_songs_placeholder": "Rechercher des titres",
+    "add_songs_hint": "Recherchez des titres à ajouter à cette playlist",
+    "in_playlist": "Dans la playlist"
   },
   "search": {
     "placeholder": "Rechercher des titres, artistes, albums...",
@@ -549,7 +559,7 @@
       },
       "animations": {
         "title": "Animations",
-        "description": "Anime les j'aime, les changements de titre et les commandes de la superposition."
+        "description": "Anime les j'aime, les changements de titre et les commandes de la superposition. Une fois masquée, un chat apparaît parfois."
       }
     },
     "audio_data": {
@@ -572,6 +582,12 @@
     "language": {
       "label": "Langue",
       "description": "Choisissez la langue de l'interface"
+    },
+    "blocked_artists": {
+      "title": "Artistes bloqués",
+      "description": "Les titres de ces artistes sont ignorés et jamais ajoutés à votre file d'attente.",
+      "empty": "Vous n'avez bloqué aucun artiste. Faites un clic droit sur un titre pour bloquer son artiste.",
+      "unblock": "Débloquer"
     },
     "autoplay_similar": {
       "title": "Lecture automatique de titres similaires",

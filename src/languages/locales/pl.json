@@ -161,6 +161,11 @@
     "unlike": "Cofnij polubienie",
     "add_to_playlist": "Dodaj do playlisty",
     "remove_from_playlist": "Usuń z playlisty",
+    "block_artist": "Zablokuj {name}",
+    "unblock_artist": "Odblokuj {name}",
+    "artist_blocked": "Wykonawca zablokowany",
+    "artist_unblocked": "Wykonawca odblokowany",
+    "artist_blocked_description": "Utwory {name} nie będą już odtwarzane",
     "no_items": "Nic tu jeszcze nie ma",
     "your_library_here": "Twoja biblioteka pojawi się tutaj, gdy coś do niej dodasz.",
     "try_another_search_clear": "Spróbuj wyszukać coś innego lub wyczyść zapytanie.",
@@ -384,6 +389,7 @@
     "offset_hint": "Wartość ujemna przyspiesza tekst, dodatnia go opóźnia",
     "track_unavailable": "„{title}” jest niedostępny, pomijam...",
     "track_unavailable_title": "Utwór niedostępny",
+    "artist_blocked_track": "Ten wykonawca jest zablokowany",
     "playback_stopped_too_many_errors": "Odtwarzanie zatrzymane: zbyt wielu utworów nie udało się wczytać.",
     "speed_pitch": "Tempo i wysokość",
     "speed": "Tempo",
@@ -419,7 +425,11 @@
     "min": "min",
     "sec": "s",
     "empty_title": "Ta playlista jest pusta",
-    "empty_subtitle": "Wyszukaj utwory, aby je dodać"
+    "empty_subtitle": "Wyszukaj utwory, aby je dodać",
+    "add_songs": "Dodaj utwory",
+    "add_songs_placeholder": "Szukaj utworów",
+    "add_songs_hint": "Wyszukaj utwory, aby dodać je do tej playlisty",
+    "in_playlist": "Na playliście"
   },
   "search": {
     "placeholder": "Szukaj utworów, wykonawców, albumów...",
@@ -551,7 +561,7 @@
       },
       "animations": {
         "title": "Animacje",
-        "description": "Animuje polubienia, zmiany utworów i przyciski nakładki."
+        "description": "Animuje polubienia, zmiany utworów i przyciski nakładki. Po ukryciu czasem pojawia się kot."
       }
     },
     "audio_data": {
@@ -574,6 +584,12 @@
     "language": {
       "label": "Język",
       "description": "Wybierz język interfejsu"
+    },
+    "blocked_artists": {
+      "title": "Zablokowani wykonawcy",
+      "description": "Utwory tych wykonawców są pomijane i nigdy nie trafiają do kolejki.",
+      "empty": "Nie zablokowano żadnego wykonawcy. Kliknij utwór prawym przyciskiem, aby zablokować wykonawcę.",
+      "unblock": "Odblokuj"
     },
     "autoplay_similar": {
       "title": "Automatycznie odtwarzaj podobne utwory",

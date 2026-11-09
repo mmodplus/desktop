@@ -161,6 +161,11 @@
     "unlike": "Non mi piace più",
     "add_to_playlist": "Aggiungi alla playlist",
     "remove_from_playlist": "Rimuovi dalla playlist",
+    "block_artist": "Blocca {name}",
+    "unblock_artist": "Sblocca {name}",
+    "artist_blocked": "Artista bloccato",
+    "artist_unblocked": "Artista sbloccato",
+    "artist_blocked_description": "I brani di {name} non verranno più riprodotti",
     "no_items": "Ancora nessun elemento",
     "your_library_here": "La tua libreria apparirà qui quando aggiungerai degli elementi.",
     "try_another_search_clear": "Prova un altro termine di ricerca o cancella la query.",
@@ -380,6 +385,7 @@
     "offset_hint": "Un valore negativo anticipa il testo, uno positivo lo ritarda",
     "track_unavailable": "\"{title}\" non è disponibile, lo salto...",
     "track_unavailable_title": "Brano non disponibile",
+    "artist_blocked_track": "Questo artista è bloccato",
     "playback_stopped_too_many_errors": "Riproduzione interrotta: non è stato possibile caricare troppi brani.",
     "speed_pitch": "Velocità e tonalità",
     "speed": "Velocità",
@@ -415,7 +421,11 @@
     "min": "min",
     "sec": "s",
     "empty_title": "Questa playlist è vuota",
-    "empty_subtitle": "Cerca dei brani da aggiungere"
+    "empty_subtitle": "Cerca dei brani da aggiungere",
+    "add_songs": "Aggiungi brani",
+    "add_songs_placeholder": "Cerca brani",
+    "add_songs_hint": "Cerca brani da aggiungere a questa playlist",
+    "in_playlist": "Nella playlist"
   },
   "search": {
     "placeholder": "Cerca brani, artisti, album...",
@@ -547,7 +557,7 @@
       },
       "animations": {
         "title": "Animazioni",
-        "description": "Anima i mi piace, i cambi di brano e i controlli dell'overlay."
+        "description": "Anima i mi piace, i cambi di brano e i controlli dell'overlay. Quando è nascosto, a volte compare un gatto."
       }
     },
     "audio_data": {
@@ -570,6 +580,12 @@
     "language": {
       "label": "Lingua",
       "description": "Seleziona la lingua dell'interfaccia"
+    },
+    "blocked_artists": {
+      "title": "Artisti bloccati",
+      "description": "I brani di questi artisti vengono saltati e mai aggiunti alla coda.",
+      "empty": "Non hai bloccato nessun artista. Fai clic destro su un brano per bloccarne l'artista.",
+      "unblock": "Sblocca"
     },
     "autoplay_similar": {
       "title": "Riproduci automaticamente brani simili",

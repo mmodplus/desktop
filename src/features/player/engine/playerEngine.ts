@@ -5,6 +5,10 @@ import {
   type RepeatMode,
   type PlayerState,
 } from "../store/playerStore";
+import {
+  isTrackBlocked,
+  useBlockedArtistsStore,
+} from "../store/blockedArtistsStore";
 import { playerRuntime } from "./playerRuntime";
 import { isRadioContext, shouldRefillRadio } from "./radioMode";
 import { pitchShifter } from "./pitchShifter";
@@ -372,7 +376,16 @@ class PlayerEngine {
         }
       });
 
-      g.__playerEngineUnsub = unsub;
+      const unsubBlocked = useBlockedArtistsStore.subscribe((state, prev) => {
+        if (state.artists.length > prev.artists.length) {
+          this.applyBlockedArtists();
+        }
+      });
+
+      g.__playerEngineUnsub = () => {
+        unsub();
+        unsubBlocked();
+      };
 
       const restoreLyricsForHydratedTrack = () => {
         const state = usePlayerStore.getState();
@@ -452,6 +465,26 @@ class PlayerEngine {
     queueIndex?: number,
     preserveQueue?: boolean,
   ): Promise<void> {
+    if (isTrackBlocked(track)) {
+      // a blocked artist's track was picked: start from the next playable one in the list
+      const source = queue ?? [track];
+      const from =
+        queueIndex ?? source.findIndex((item) => item.id === track.id);
+      const replacement = source
+        .slice(from + 1)
+        .find((item) => !isTrackBlocked(item));
+      if (!replacement) {
+        this.notifyArtistBlocked(track);
+        return;
+      }
+      track = replacement;
+      queueIndex = undefined;
+    }
+    if (queue?.some((item) => isTrackBlocked(item))) {
+      queue = queue.filter((item) => !isTrackBlocked(item));
+      queueIndex = undefined;
+    }
+
     const store = usePlayerStore.getState();
     const nextQueue = this.normalizeQueue(queue ?? [track], track);
     const nextIndex =
@@ -528,6 +561,18 @@ class PlayerEngine {
     startIndex?: number,
   ): Promise<void> {
     if (!tracks || tracks.length === 0) return;
+    if (tracks.some((item) => isTrackBlocked(item))) {
+      const startTrack =
+        startIndex !== undefined ? tracks[startIndex] : undefined;
+      const playable = tracks.filter((item) => !isTrackBlocked(item));
+      if (playable.length === 0) {
+        this.notifyArtistBlocked(tracks[0]);
+        return;
+      }
+      const playableStart = startTrack ? playable.indexOf(startTrack) : -1;
+      tracks = playable;
+      startIndex = playableStart >= 0 ? playableStart : undefined;
+    }
     const store = usePlayerStore.getState();
     const seedIndex =
       startIndex !== undefined && startIndex >= 0 && startIndex < tracks.length
@@ -571,6 +616,10 @@ class PlayerEngine {
   }
 
   public async startRadioStation(track: Track): Promise<void> {
+    if (isTrackBlocked(track)) {
+      this.notifyArtistBlocked(track);
+      return;
+    }
     const store = usePlayerStore.getState();
     this.sessionId += 1;
     const mySession = this.sessionId;
@@ -600,7 +649,7 @@ class PlayerEngine {
       if (mySession !== this.sessionId) return;
       const additions = response.items
         .map(toClientTrack)
-        .filter((item) => item.id !== track.id);
+        .filter((item) => item.id !== track.id && !isTrackBlocked(item));
 
       if (additions.length > 0) {
         const latestStore = usePlayerStore.getState();
@@ -944,6 +993,10 @@ class PlayerEngine {
   }
 
   public addToQueue(track: Track): void {
+    if (isTrackBlocked(track)) {
+      this.notifyArtistBlocked(track);
+      return;
+    }
     const store = usePlayerStore.getState();
     // nothing playing (empty queue, or playback ran off the end): start it,
     // otherwise the track sits in a queue nobody will reach
@@ -979,6 +1032,10 @@ class PlayerEngine {
   }
 
   public playNext(track: Track): void {
+    if (isTrackBlocked(track)) {
+      this.notifyArtistBlocked(track);
+      return;
+    }
     const store = usePlayerStore.getState();
     const currentQueue = store.queue;
     const currentIndex = store.currentIndex;
@@ -1086,6 +1143,81 @@ class PlayerEngine {
     if (playerRuntime) {
       playerRuntime.pause();
     }
+  }
+
+  private notifyArtistBlocked(track: Track): void {
+    const translate = createTranslatorSync(getStoredLocale());
+    showToast(translate("player.artist_blocked_track"), "error", {
+      description: track.artists
+        ? `${track.title} — ${track.artists}`
+        : track.title,
+    });
+  }
+
+  /** an artist got blocked: drop their tracks from the queue and move off the current one */
+  private applyBlockedArtists(): void {
+    const blocked = useBlockedArtistsStore.getState().artists;
+    if (blocked.length === 0) return;
+    const keep = (track: Track) => !isTrackBlocked(track, blocked);
+    this.masterPlaylist = this.masterPlaylist.filter(keep);
+    this.originalUpcomingQueue = this.originalUpcomingQueue.filter(keep);
+
+    const store = usePlayerStore.getState();
+    const current = store.currentTrack;
+    // the current entry stays for now, so the next index is computed from it
+    const pruned = store.queue.filter(
+      (track, index) => index === store.currentIndex || keep(track),
+    );
+    const currentIndex =
+      store.currentIndex >= 0 && store.currentIndex < store.queue.length
+        ? pruned.indexOf(store.queue[store.currentIndex])
+        : -1;
+    if (pruned.length !== store.queue.length) {
+      store.setQueue(pruned);
+      store.setCurrentTrack(current, currentIndex);
+      const queuedIds = new Set(pruned.map((track) => track.id));
+      store.setAutoplayTrackIds(
+        store.autoplayTrackIds.filter((id) => queuedIds.has(id)),
+      );
+    }
+
+    if (!current || currentIndex < 0 || keep(current)) {
+      this.preloadNextTrack(usePlayerStore.getState());
+      return;
+    }
+
+    if (store.status === "playing" || store.status === "loading") {
+      // skip as usual (radio / autoplay refills included), then drop the entry we left
+      void this.skipNext(false).then(() => this.applyBlockedArtists());
+      return;
+    }
+
+    // paused: show the next track without playing it, resume() loads it
+    const computed = this.computeNextIndex(false);
+    const nextIndex =
+      computed === null || computed === currentIndex
+        ? null
+        : computed > currentIndex
+          ? computed - 1
+          : computed;
+    const queue = pruned.filter((_, index) => index !== currentIndex);
+    const nextTrack = nextIndex !== null ? queue[nextIndex] : undefined;
+
+    this.sessionId += 1;
+    playerRuntime?.stop();
+    store.setQueue(queue);
+    if (!nextTrack || nextIndex === null) {
+      store.setStatus("idle");
+      store.setPosition(0);
+      store.setDuration(0);
+      store.setCurrentTrack(null, -1);
+      store.setFullscreen(false);
+      return;
+    }
+    store.setCurrentTrack(nextTrack, nextIndex);
+    store.setPosition(0);
+    store.setDuration(nextTrack.durationMs ?? 0);
+    this.preloadNextTrack(usePlayerStore.getState());
   }
 
   private normalizeQueue(queue: Track[], selected: Track): Track[] {
@@ -1246,7 +1378,7 @@ class PlayerEngine {
     const queuedIds = new Set(state.queue.map((track) => track.id));
     const additions = items
       .map(toClientTrack)
-      .filter((track) => !queuedIds.has(track.id));
+      .filter((track) => !queuedIds.has(track.id) && !isTrackBlocked(track));
     if (additions.length === 0) return;
 
     const sample = additions

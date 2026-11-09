@@ -165,6 +165,11 @@
     "unlike": "Gefällt mir nicht mehr",
     "add_to_playlist": "Zur Playlist hinzufügen",
     "remove_from_playlist": "Aus der Playlist entfernen",
+    "block_artist": "{name} blockieren",
+    "unblock_artist": "{name} entsperren",
+    "artist_blocked": "Künstler blockiert",
+    "artist_unblocked": "Künstler entsperrt",
+    "artist_blocked_description": "Songs von {name} werden nicht mehr abgespielt",
     "no_items": "Noch keine Einträge",
     "your_library_here": "Deine Mediathek erscheint hier, sobald du Einträge hinzufügst.",
     "try_another_search_clear": "Versuche es mit einem anderen Suchbegriff oder lösche die Suche.",
@@ -385,6 +390,7 @@
     "offset_hint": "Negative Werte verschieben den Songtext nach vorn, positive nach hinten",
     "track_unavailable": "„{title}“ ist nicht verfügbar und wird übersprungen…",
     "track_unavailable_title": "Titel nicht verfügbar",
+    "artist_blocked_track": "Dieser Künstler ist blockiert",
     "playback_stopped_too_many_errors": "Wiedergabe gestoppt – zu viele Titel konnten nicht geladen werden.",
     "speed_pitch": "Tempo & Tonhöhe",
     "speed": "Tempo",
@@ -420,7 +426,11 @@
     "min": "Min.",
     "sec": "Sek.",
     "empty_title": "Diese Playlist ist leer",
-    "empty_subtitle": "Suche nach Titeln, die du hinzufügen möchtest"
+    "empty_subtitle": "Suche nach Titeln, die du hinzufügen möchtest",
+    "add_songs": "Titel hinzufügen",
+    "add_songs_placeholder": "Nach Titeln suchen",
+    "add_songs_hint": "Suche nach Titeln, um sie zu dieser Playlist hinzuzufügen",
+    "in_playlist": "In der Playlist"
   },
   "search": {
     "placeholder": "Titel, Künstler oder Alben suchen",
@@ -492,7 +502,7 @@
       },
       "animations": {
         "title": "Animationen",
-        "description": "Animiert Likes, Titelwechsel und die Steuerelemente des Overlays."
+        "description": "Animiert Likes, Titelwechsel und die Steuerelemente des Overlays. Beim Ausblenden taucht manchmal eine Katze auf."
       }
     },
     "audio_data": {
@@ -515,6 +525,12 @@
     "language": {
       "label": "Sprache",
       "description": "Wähle die Sprache der Oberfläche"
+    },
+    "blocked_artists": {
+      "title": "Blockierte Künstler",
+      "description": "Songs dieser Künstler werden übersprungen und nie zur Warteschlange hinzugefügt.",
+      "empty": "Du hast keine Künstler blockiert. Klicke mit der rechten Maustaste auf einen Song, um den Künstler zu blockieren.",
+      "unblock": "Entsperren"
     },
     "autoplay_similar": {
       "title": "Ähnliche Titel automatisch abspielen",

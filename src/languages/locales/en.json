@@ -167,6 +167,11 @@
     "unlike": "Unlike",
     "add_to_playlist": "Add to playlist",
     "remove_from_playlist": "Remove from playlist",
+    "block_artist": "Block {name}",
+    "unblock_artist": "Unblock {name}",
+    "artist_blocked": "Artist blocked",
+    "artist_unblocked": "Artist unblocked",
+    "artist_blocked_description": "Songs by {name} won't play anymore",
     "no_items": "No items yet",
     "your_library_here": "Your library will appear here when items are added.",
     "try_another_search_clear": "Try another search term or clear the query.",
@@ -387,6 +392,7 @@
     "offset_hint": "Negative moves lyrics earlier, positive later",
     "track_unavailable": "\"{title}\" is unavailable, skipping...",
     "track_unavailable_title": "Track unavailable",
+    "artist_blocked_track": "This artist is blocked",
     "playback_stopped_too_many_errors": "Playback stopped — too many tracks failed to load.",
     "speed_pitch": "Speed & Pitch",
     "speed": "Speed",
@@ -423,7 +429,11 @@
     "sec": "sec",
     "empty_title": "This playlist is empty",
     "empty_subtitle": "Search for songs to add",
-    "likes_empty": "No liked songs yet"
+    "likes_empty": "No liked songs yet",
+    "add_songs": "Add songs",
+    "add_songs_placeholder": "Search for songs",
+    "add_songs_hint": "Search for songs to add to this playlist",
+    "in_playlist": "In playlist"
   },
   "search": {
     "placeholder": "Search tracks, artists, albums...",
@@ -557,7 +567,7 @@
       },
       "animations": {
         "title": "Animations",
-        "description": "Animate likes, track changes and the controls on the overlay."
+        "description": "Animate likes, track changes and the controls on the overlay. When hidden, a cat sometimes shows up."
       }
     },
     "youtube": {
@@ -650,6 +660,12 @@
     "language": {
       "label": "Language",
       "description": "Select the interface language"
+    },
+    "blocked_artists": {
+      "title": "Blocked artists",
+      "description": "Songs by these artists are skipped and never added to your queue.",
+      "empty": "You haven't blocked any artists. Right-click a song to block its artist.",
+      "unblock": "Unblock"
     },
     "autoplay_similar": {
       "title": "Autoplay similar tracks",

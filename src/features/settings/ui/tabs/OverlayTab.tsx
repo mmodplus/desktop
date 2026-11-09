@@ -350,7 +350,7 @@ export function OverlayTab({ searchQuery }: { searchQuery?: string }) {
           title={t("settings.overlay.animations.title") || "Animations"}
           description={
             t("settings.overlay.animations.description") ||
-            "Animate likes, track changes and the controls on the overlay."
+            "Animate likes, track changes and the controls on the overlay. When hidden, a cat sometimes shows up."
           }
           titleKey="settings.overlay.animations.title"
           descKey="settings.overlay.animations.description"

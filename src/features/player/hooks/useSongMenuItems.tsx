@@ -7,6 +7,7 @@ import {
   LuPlus,
   LuTrash2,
   LuFolderPlus,
+  LuBan,
 } from "react-icons/lu";
 import type { DropdownMenuItem } from "@/shared/ui/DropdownMenu";
 import { playerEngine } from "../engine/playerEngine";
@@ -19,11 +20,22 @@ import {
 } from "@/features/library";
 import { useTranslation } from "@/languages";
 import { showToast } from "@/shared/ui";
+import type { TrackArtist } from "@/shared/types";
+import {
+  getTrackArtists,
+  isSameArtist,
+  useBlockedArtistsStore,
+} from "../store/blockedArtistsStore";
+
+// one entry per credited artist, capped so long features don't flood the menu
+const MAX_BLOCK_ITEMS = 3;
 
 export interface SongMenuContext {
   id?: string;
   title: string;
   artists: string;
+  artistId?: string;
+  artistList?: TrackArtist[];
   coverUrl: string;
   duration?: string;
   durationMs?: number;
@@ -40,6 +52,8 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
     id,
     title,
     artists,
+    artistId,
+    artistList,
     coverUrl,
     duration,
     durationMs,
@@ -65,6 +79,40 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
       likeMutation.mutate(id);
     }
   }, [id, liked, likeMutation, unlikeMutation]);
+
+  const blockedArtists = useBlockedArtistsStore((state) => state.artists);
+
+  const buildBlockItems = useCallback((): DropdownMenuItem[] => {
+    const { blockArtist, unblockArtist } = useBlockedArtistsStore.getState();
+    return getTrackArtists({ artists, artistId, artistList })
+      .slice(0, MAX_BLOCK_ITEMS)
+      .map((artist) => {
+        const blocked = blockedArtists.some((it) => isSameArtist(it, artist));
+        return {
+          id: `${blocked ? "unblock" : "block"}-artist-${artist.id ?? artist.name}`,
+          label: blocked
+            ? t("common.unblock_artist", { name: artist.name })
+            : t("common.block_artist", { name: artist.name }),
+          icon: <LuBan size={15} />,
+          danger: !blocked,
+          onClick: () => {
+            if (blocked) {
+              unblockArtist(artist);
+              showToast(t("common.artist_unblocked"), "checkmark", {
+                description: artist.name,
+              });
+            } else {
+              blockArtist(artist);
+              showToast(t("common.artist_blocked"), "checkmark", {
+                description: t("common.artist_blocked_description", {
+                  name: artist.name,
+                }),
+              });
+            }
+          },
+        };
+      });
+  }, [artists, artistId, artistList, blockedArtists, t]);
 
   const buildMenu = useCallback((): DropdownMenuItem[] => {
     const isTrack = searchType === "track" || !searchType;
@@ -154,6 +202,7 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
               });
             },
           },
+          ...buildBlockItems(),
         ];
       }
 
@@ -238,6 +287,7 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
             });
           },
         },
+        ...buildBlockItems(),
       ];
     }
 
@@ -274,6 +324,7 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
     liked,
     handleLike,
     playlistsData,
+    buildBlockItems,
     t,
   ]);
 

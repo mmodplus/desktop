@@ -86,6 +86,8 @@ function SongCardWithMenu({
     id,
     title,
     artists,
+    artistId,
+    artistList,
     coverUrl,
     duration,
     durationMs: resolvedDurationMs,

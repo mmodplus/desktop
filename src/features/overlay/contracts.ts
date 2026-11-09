@@ -42,6 +42,8 @@ export interface OverlayAction {
     | "volumeDown"
     | "setVolume"
     | "focusMainWindow"
-    | "closeOverlay";
+    | "closeOverlay"
+    // overlay window -> main process only: shrinks the window to the hidden tab
+    | "setCollapsed";
   payload?: any;
 }

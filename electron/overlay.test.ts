@@ -267,6 +267,45 @@ describe("OverlayManager", () => {
     expect(overlay.showInactive).toHaveBeenCalledTimes(1);
   });
 
+  it("hiding shrinks the window to the tab around its anchor, and only the overlay itself can do it", async () => {
+    const { manager, main, overlays, ready } = setup();
+    await vi.advanceTimersByTimeAsync(600);
+    const [overlay] = overlays();
+    ready(overlay);
+    manager.showOverlay();
+    const expanded = overlay.getBounds();
+    expect(expanded.width).toBe(320);
+    const sendAction = electron.ipcOn.get("overlay:send-action")!;
+
+    sendAction({ sender: main.webContents }, { type: "setCollapsed", payload: { collapsed: true } });
+    expect(overlay.getBounds()).toEqual(expanded);
+
+    sendAction({ sender: overlay.webContents }, { type: "setCollapsed", payload: { collapsed: true } });
+    expect(overlay.getBounds()).toEqual({
+      x: expanded.x + (320 - 64) / 2,
+      y: expanded.y,
+      width: 64,
+      height: 44,
+    });
+    expect(main.webContents.send).not.toHaveBeenCalledWith("overlay:action", expect.anything());
+
+    sendAction({ sender: overlay.webContents }, { type: "setCollapsed", payload: { collapsed: false } });
+    expect(overlay.getBounds()).toEqual(expanded);
+  });
+
+  it("a rebuilt overlay window starts expanded", async () => {
+    const { manager, overlays, ready } = setup();
+    await vi.advanceTimersByTimeAsync(600);
+    const [first] = overlays();
+    ready(first);
+    manager.showOverlay();
+    electron.ipcOn.get("overlay:send-action")!({ sender: first.webContents }, { type: "setCollapsed", payload: { collapsed: true } });
+    first.webContents.emit("render-process-gone", {}, { reason: "crashed" });
+    await vi.advanceTimersByTimeAsync(600);
+    const second = overlays().find((w) => w !== first)!;
+    expect(second.getBounds().width).toBe(320);
+  });
+
   it("never shows while signed out", async () => {
     const { main, overlays } = setup(false);
     main.emit("minimize");

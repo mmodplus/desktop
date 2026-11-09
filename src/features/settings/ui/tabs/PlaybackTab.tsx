@@ -1,8 +1,57 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/languages";
-import { usePlayerStore } from "@/features/player";
-import { ToggleSwitch } from "@/shared/ui";
-import { SettingRow, SettingSection, SegmentedControl } from "../controls";
+import { usePlayerStore, useBlockedArtistsStore } from "@/features/player";
+import { Button, ToggleSwitch } from "@/shared/ui";
+import {
+  SettingBlock,
+  SettingRow,
+  SettingSection,
+  SegmentedControl,
+} from "../controls";
+
+function BlockedArtistsSetting({ searchQuery }: { searchQuery?: string }) {
+  const { t } = useTranslation();
+  const artists = useBlockedArtistsStore((state) => state.artists);
+  const unblockArtist = useBlockedArtistsStore((state) => state.unblockArtist);
+
+  return (
+    <SettingBlock
+      title={t("settings.blocked_artists.title")}
+      description={t("settings.blocked_artists.description")}
+      titleKey="settings.blocked_artists.title"
+      descKey="settings.blocked_artists.description"
+      searchQuery={searchQuery}
+    >
+      {artists.length === 0 ? (
+        <span className="text-text-tertiary text-[13px]">
+          {t("settings.blocked_artists.empty")}
+        </span>
+      ) : (
+        <div className="flex flex-col gap-[6px]">
+          {artists.map((artist) => (
+            <div
+              key={artist.id ?? artist.name}
+              className="flex items-center justify-between gap-[12px]"
+            >
+              <span className="min-w-0 truncate text-text-primary text-[13px]">
+                {artist.name}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                type="button"
+                className="shrink-0"
+                onClick={() => unblockArtist(artist)}
+              >
+                {t("settings.blocked_artists.unblock")}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </SettingBlock>
+  );
+}
 
 export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
   const { t } = useTranslation();
@@ -123,6 +172,8 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
           />
         }
       />
+
+      <BlockedArtistsSetting searchQuery={searchQuery} />
     </SettingSection>
   );
 }

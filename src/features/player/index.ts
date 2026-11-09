@@ -15,6 +15,11 @@ export {
   type DefaultPlaybackContext,
   type RepeatMode,
 } from "./store/playerStore";
+export {
+  useBlockedArtistsStore,
+  isTrackBlocked,
+  type BlockedArtist,
+} from "./store/blockedArtistsStore";
 export { usePlayerState } from "./hooks/usePlayerState";
 export { useAppIconSync } from "./hooks/useAppIconSync";
 export {

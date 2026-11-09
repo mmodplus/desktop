@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "@/languages";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { SkipNext, SkipPrevious } from "@solar-icons/react";
+import { AltArrowDown, AltArrowUp, SkipNext, SkipPrevious } from "@solar-icons/react";
 import {
   PlayerMorphIcon,
   ICON_PLAY,
@@ -23,6 +23,7 @@ import {
   useOverlaySettingsStore,
   OVERLAY_SETTINGS_STORAGE_KEY,
 } from "../store/overlaySettingsStore";
+import { OverlayCat } from "./OverlayCat";
 
 const OVERLAY_CARD_TRANSITION = {
   duration: 0.08,
@@ -39,6 +40,12 @@ const TRACK_SWAP_TRANSITION = {
   duration: 0.32,
   ease: [0.16, 1, 0.3, 1],
 } as const;
+const COLLAPSE_EXIT_TRANSITION = {
+  duration: 0.12,
+  ease: [0.4, 0, 1, 1],
+} as const;
+// odds that hiding the overlay tucks it away as the cat instead of the plain tab
+const CAT_CHANCE = 0.35;
 const LIKE_ACCENT = "#ff3b5c";
 const LIKE_BURST_ANGLES = [-90, -30, 30, 90, 150, 210];
 
@@ -116,6 +123,10 @@ export function OverlayPlayer() {
 
   const [isInfoHovered, setIsInfoHovered] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
+  const [collapsedAsCat, setCollapsedAsCat] = useState(false);
+  const [isTabHovered, setIsTabHovered] = useState(false);
+  const collapsedRef = useRef(collapsed);
 
   const animationsEnabled = useOverlaySettingsStore((s) => s.animations);
   const prefersReducedMotion = useReducedMotion();
@@ -184,6 +195,22 @@ export function OverlayPlayer() {
   const sendAction = useCallback((action: OverlayAction) => {
     window.linerElectron?.sendOverlayAction?.(action);
   }, []);
+
+  const toggleCollapsed = useCallback(() => {
+    const next = !collapsedRef.current;
+    collapsedRef.current = next;
+    if (next) setCollapsedAsCat(Math.random() < CAT_CHANCE);
+    setIsTabHovered(false);
+    setCollapsed(next);
+  }, []);
+
+  // the window resizes once the outgoing view has faded, so it never clips mid-animation
+  const syncCollapsedWindow = useCallback(() => {
+    sendAction({
+      type: "setCollapsed",
+      payload: { collapsed: collapsedRef.current },
+    });
+  }, [sendAction]);
 
   useEffect(() => {
     const trackId = state.track?.id ?? null;
@@ -367,17 +394,104 @@ export function OverlayPlayer() {
 
   return (
     <div
-      className="flex h-screen w-screen select-none flex-col justify-start bg-transparent antialiased overflow-hidden font-sans p-1 m-0 border-0"
+      className="flex h-screen w-screen select-none flex-col items-center justify-start bg-transparent antialiased overflow-hidden font-sans p-1 m-0 border-0"
       style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
     >
-      {/* ── Main Overlay Card ── */}
-      <motion.div
+      <AnimatePresence
         initial={false}
+        mode="wait"
+        onExitComplete={syncCollapsedWindow}
+      >
+      {collapsed ? (
+        /* ── Hidden: a small tab, or now and then the cat ── */
+        <motion.button
+          key="tab"
+          type="button"
+          tabIndex={-1}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleCollapsed();
+          }}
+          onMouseEnter={() => setIsTabHovered(true)}
+          onMouseLeave={() => setIsTabHovered(false)}
+          initial={
+            animated
+              ? collapsedAsCat
+                ? { opacity: 0, y: -12 }
+                : { opacity: 0, scale: 0.6, y: -4 }
+              : false
+          }
+          animate={{
+            opacity: isVisible ? 1 : 0,
+            scale: isVisible ? 1 : 0.92,
+            y: isVisible || !animated ? 0 : -4,
+          }}
+          exit={
+            animated
+              ? { opacity: 0, scale: 0.6, y: -4, transition: COLLAPSE_EXIT_TRANSITION }
+              : { opacity: 0, transition: { duration: 0 } }
+          }
+          whileTap={animated ? { scale: 0.9 } : undefined}
+          transition={
+            animated && isVisible ? OVERLAY_CARD_SPRING : OVERLAY_CARD_TRANSITION
+          }
+          className="flex shrink-0 items-center justify-center border-0 bg-transparent p-0 outline-none cursor-pointer"
+          style={
+            {
+              WebkitAppRegion: "no-drag",
+              willChange: "transform, opacity",
+            } as React.CSSProperties
+          }
+          aria-label="Show player"
+        >
+          {collapsedAsCat && animated ? (
+            <OverlayCat hovered={isTabHovered} />
+          ) : (
+            <span
+              className={`flex h-[28px] items-center gap-1 rounded-full bg-[#0d0d10] pl-1 pr-1.5 transition-colors ${
+                isTabHovered ? "text-white" : "text-white/50"
+              }`}
+            >
+              <span className="relative h-[20px] w-[20px] shrink-0 overflow-hidden rounded-full bg-[#16161a]">
+                {coverSrc ? (
+                  <CoverImage
+                    src={coverSrc}
+                    alt=""
+                    fill
+                    sizes="20px"
+                    unoptimized
+                    draggable={false}
+                    className="rounded-full object-cover pointer-events-none select-none"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-[9px] text-white/30">
+                    ♪
+                  </span>
+                )}
+              </span>
+              <AltArrowDown size={12} weight="Bold" />
+            </span>
+          )}
+        </motion.button>
+      ) : (
+      /* ── Main Overlay Card ── */
+      <motion.div
+        key="card"
+        initial={animated ? { opacity: 0, scale: 0.92, y: -4 } : false}
         animate={{
           opacity: isVisible ? 1 : 0,
           scale: isVisible ? 1 : 0.92,
           y: isVisible || !animated ? 0 : -4,
         }}
+        exit={
+          animated
+            ? { opacity: 0, scale: 0.92, y: -4, transition: COLLAPSE_EXIT_TRANSITION }
+            : { opacity: 0, transition: { duration: 0 } }
+        }
         transition={
           animated && isVisible ? OVERLAY_CARD_SPRING : OVERLAY_CARD_TRANSITION
         }
@@ -611,9 +725,32 @@ export function OverlayPlayer() {
             >
               <SkipNext size={16} weight="Bold" />
             </motion.button>
+
+            <motion.button
+              type="button"
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCollapsed();
+              }}
+              whileTap={animated ? { scale: 0.85, y: -2 } : undefined}
+              transition={{ type: "spring", stiffness: 600, damping: 22 }}
+              className={`flex h-[26px] w-[18px] items-center justify-center rounded-lg border-0 bg-transparent text-white/30 hover:text-white transition-colors outline-none cursor-pointer ${
+                animated ? "" : "active:scale-90"
+              }`}
+              aria-label="Hide player"
+            >
+              <AltArrowUp size={13} weight="Bold" />
+            </motion.button>
           </div>
         </div>
       </motion.div>
+      )}
+      </AnimatePresence>
     </div>
   );
 }

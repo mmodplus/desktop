@@ -163,6 +163,11 @@
     "unlike": "Ya no me gusta",
     "add_to_playlist": "Añadir a lista de reproducción",
     "remove_from_playlist": "Quitar de lista de reproducción",
+    "block_artist": "Bloquear a {name}",
+    "unblock_artist": "Desbloquear a {name}",
+    "artist_blocked": "Artista bloqueado",
+    "artist_unblocked": "Artista desbloqueado",
+    "artist_blocked_description": "Ya no se reproducirán canciones de {name}",
     "no_items": "Aún no hay elementos",
     "your_library_here": "Tu biblioteca aparecerá aquí a medida que añadas contenido.",
     "try_another_search_clear": "Prueba con otro término de búsqueda o limpia la consulta.",
@@ -382,6 +387,7 @@
     "offset_hint": "Valores negativos adelantan la letra, positivos la retrasan",
     "track_unavailable": "\"{title}\" no está disponible, pasando a la siguiente...",
     "track_unavailable_title": "Canción no disponible",
+    "artist_blocked_track": "Este artista está bloqueado",
     "playback_stopped_too_many_errors": "Reproducción detenida: demasiadas canciones fallaron al cargar.",
     "speed_pitch": "Velocidad y tono",
     "speed": "Velocidad",
@@ -418,7 +424,11 @@
     "sec": "s",
     "empty_title": "Esta lista de reproducción está vacía",
     "empty_subtitle": "Busca canciones para añadirlas",
-    "likes_empty": "Aún no hay canciones que te gusten"
+    "likes_empty": "Aún no hay canciones que te gusten",
+    "add_songs": "Añadir canciones",
+    "add_songs_placeholder": "Buscar canciones",
+    "add_songs_hint": "Busca canciones para añadirlas a esta playlist",
+    "in_playlist": "En la playlist"
   },
   "search": {
     "placeholder": "Buscar canciones, artistas, álbumes...",
@@ -495,7 +505,7 @@
       },
       "animations": {
         "title": "Animaciones",
-        "description": "Anima el me gusta, los cambios de canción y los controles del reproductor flotante."
+        "description": "Anima el me gusta, los cambios de canción y los controles del reproductor flotante. Al ocultarlo, a veces aparece un gato."
       }
     },
     "discord": {
@@ -568,6 +578,12 @@
     "language": {
       "label": "Idioma",
       "description": "Selecciona el idioma de la interfaz"
+    },
+    "blocked_artists": {
+      "title": "Artistas bloqueados",
+      "description": "Las canciones de estos artistas se saltan y nunca se añaden a tu cola.",
+      "empty": "No has bloqueado ningún artista. Haz clic derecho en una canción para bloquear a su artista.",
+      "unblock": "Desbloquear"
     },
     "autoplay_similar": {
       "title": "Reproducir canciones similares automáticamente",

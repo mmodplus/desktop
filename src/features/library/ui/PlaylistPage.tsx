@@ -65,6 +65,7 @@ import {
   TrackSearchEmpty,
 } from "./TrackSearch";
 import { useTrackSort, TrackSortMenu } from "./TrackSort";
+import AddTracksToPlaylistModal from "./modals/AddTracksToPlaylistModal";
 
 interface TrackItemProps {
   track: Track;
@@ -227,6 +228,12 @@ function LibraryPlaylistContent() {
   const currentTracks = useMemo(() => {
     return optimisticTracks ?? viewData?.tracks ?? [];
   }, [optimisticTracks, viewData?.tracks]);
+
+  const [addTracksOpen, setAddTracksOpen] = useState(false);
+  const existingTrackIds = useMemo(
+    () => new Set(currentTracks.map((track) => track.id)),
+    [currentTracks],
+  );
 
   const sort = useTrackSort(currentTracks, id);
   const sortedTracks = sort.sorted;
@@ -671,6 +678,16 @@ function LibraryPlaylistContent() {
                       >
                         <LuShuffle size={18} />
                       </Button>
+                      {!isLikesMode && decodedId && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => setAddTracksOpen(true)}
+                          className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} !w-[52px] !p-0 text-text-primary`}
+                          title={t("playlist.add_songs")}
+                        >
+                          <AddLine size={20} />
+                        </Button>
+                      )}
                     </>
                   }
                   trailingActions={
@@ -805,6 +822,16 @@ function LibraryPlaylistContent() {
                         {t("playlist.empty_subtitle")}
                       </p>
                     </div>
+                    {!isLikesMode && decodedId && (
+                      <Button
+                        variant="secondary"
+                        onClick={() => setAddTracksOpen(true)}
+                        className={`${HERO_BUTTON_CLASS} ${HERO_GLASS_BUTTON_CLASS} mt-[4px] px-[18px] text-text-primary`}
+                      >
+                        <AddLine size={16} />
+                        <span>{t("playlist.add_songs")}</span>
+                      </Button>
+                    )}
                   </div>
                 ) : search.matches && search.matches.length === 0 ? (
                   <TrackSearchEmpty
@@ -959,6 +986,15 @@ function LibraryPlaylistContent() {
           </div>
         )}
       </div>
+
+      {!isLikesMode && decodedId && (
+        <AddTracksToPlaylistModal
+          open={addTracksOpen}
+          onClose={() => setAddTracksOpen(false)}
+          playlistId={decodedId}
+          existingTrackIds={existingTrackIds}
+        />
+      )}
     </div>
   );
 }

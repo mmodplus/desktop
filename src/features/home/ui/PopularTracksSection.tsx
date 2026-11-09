@@ -46,6 +46,8 @@ function TrackCard({
     id: item.item.id,
     title: item.item.title,
     artists: item.item.artists,
+    artistId: item.item.artistId,
+    artistList: item.item.artistList,
     coverUrl: item.item.coverUrl,
     durationMs: item.item.durationMs,
     searchType: "track",

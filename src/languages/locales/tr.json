@@ -161,6 +161,11 @@
     "unlike": "Beğenmekten vazgeç",
     "add_to_playlist": "Çalma listesine ekle",
     "remove_from_playlist": "Çalma listesinden kaldır",
+    "block_artist": "Engelle: {name}",
+    "unblock_artist": "Engeli kaldır: {name}",
+    "artist_blocked": "Sanatçı engellendi",
+    "artist_unblocked": "Sanatçının engeli kaldırıldı",
+    "artist_blocked_description": "Bu sanatçının parçaları artık çalınmayacak: {name}",
     "no_items": "Henüz öğe yok",
     "your_library_here": "Öğe ekledikçe kitaplığın burada görünecek.",
     "try_another_search_clear": "Başka bir terim dene veya aramayı temizle.",
@@ -380,6 +385,7 @@
     "offset_hint": "Negatif değer sözleri öne, pozitif değer geriye alır",
     "track_unavailable": "\"{title}\" kullanılamıyor, atlanıyor...",
     "track_unavailable_title": "Parça kullanılamıyor",
+    "artist_blocked_track": "Bu sanatçı engellendi",
     "playback_stopped_too_many_errors": "Çalma durduruldu: çok fazla parça yüklenemedi.",
     "speed_pitch": "Hız ve Perde",
     "speed": "Hız",
@@ -415,7 +421,11 @@
     "min": "dk",
     "sec": "sn",
     "empty_title": "Bu çalma listesi boş",
-    "empty_subtitle": "Eklemek için şarkı ara"
+    "empty_subtitle": "Eklemek için şarkı ara",
+    "add_songs": "Şarkı ekle",
+    "add_songs_placeholder": "Şarkı ara",
+    "add_songs_hint": "Bu çalma listesine eklemek için şarkı arayın",
+    "in_playlist": "Çalma listesinde"
   },
   "search": {
     "placeholder": "Parça, sanatçı, albüm ara...",
@@ -547,7 +557,7 @@
       },
       "animations": {
         "title": "Animasyonlar",
-        "description": "Katmandaki beğenileri, parça değişimlerini ve kontrolleri canlandırır."
+        "description": "Katmandaki beğenileri, parça değişimlerini ve kontrolleri canlandırır. Gizlendiğinde bazen bir kedi belirir."
       }
     },
     "audio_data": {
@@ -570,6 +580,12 @@
     "language": {
       "label": "Dil",
       "description": "Arayüz dilini seç"
+    },
+    "blocked_artists": {
+      "title": "Engellenen sanatçılar",
+      "description": "Bu sanatçıların parçaları atlanır ve sıranıza asla eklenmez.",
+      "empty": "Henüz hiçbir sanatçıyı engellemediniz. Sanatçısını engellemek için bir parçaya sağ tıklayın.",
+      "unblock": "Engeli kaldır"
     },
     "autoplay_similar": {
       "title": "Benzer parçaları otomatik çal",
